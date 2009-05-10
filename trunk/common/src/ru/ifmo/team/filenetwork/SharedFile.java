@@ -11,15 +11,15 @@ public class SharedFile {
 
     private String description;
 
-    private final int size;
+    private final long size;
 
     private final String hash;
 
-    public SharedFile(int size, String hash) {
+    public SharedFile(long size, String hash) {
         this(null, null, size, hash);
     }
 
-    public SharedFile(String name, String description, int size, String hash) {
+    public SharedFile(String name, String description, long size, String hash) {
         this.name = name;
         this.description = description;
         this.size = size;
@@ -46,7 +46,7 @@ public class SharedFile {
         }
     }
 
-    public int getSize() {
+    public long getSize() {
         return size;
     }
 

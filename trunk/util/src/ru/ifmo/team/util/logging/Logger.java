@@ -25,12 +25,13 @@ public class Logger {
 
     /*package*/ void log(String message) {
         try {
+            String msg = message.replace("\n", "");
             synchronized (MONITOR) {
                 FileWriter logWriter = new FileWriter(logFile, true);
                 //TODO date
                 Date now = new Date(System.currentTimeMillis());
-                
-                logWriter.write(now + " " + message + "\n");
+
+                logWriter.write(now + " " + msg + "\n");
                 logWriter.close();
             }
         } catch (IOException e) {

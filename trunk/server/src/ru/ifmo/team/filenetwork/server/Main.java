@@ -2,7 +2,6 @@ package ru.ifmo.team.filenetwork.server;
 
 import ru.ifmo.team.util.logging.Logger;
 import ru.ifmo.team.util.tcp.server.TCPServer;
-import ru.ifmo.team.util.IClientManager;
 
 /**
  * User: Daniel Penkin
@@ -12,7 +11,7 @@ import ru.ifmo.team.util.IClientManager;
 public class Main {
 
     private static final Logger serverLogger = new Logger("/Users/danielpenkin/Desktop/logs/server.log");
-    private static final Logger tcpServerLogger = new Logger("/Users/danielpenkin/Desktop/logs/tcp.log");
+    private static final Logger tcpServerLogger = new Logger("/Users/danielpenkin/Desktop/logs/server_tcp.log");
 
     private void run() throws InterruptedException {
         serverLogger.clearLog();
@@ -22,10 +21,10 @@ public class Main {
         System.out.print("Starting server...");
         if (server.start()) {
             System.out.println("OK");
-            Thread.sleep(10000);
-            System.out.print("Stopping server...");
-            fileServer.shutDown();
-            server.stop();
+//            Thread.sleep(30000);
+//            System.out.print("Stopping server...");
+//            fileServer.shutDown();
+//            server.stop();
         } else {
             System.out.println("FAILED");
         }

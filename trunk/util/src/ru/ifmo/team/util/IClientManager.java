@@ -10,5 +10,5 @@ import ru.ifmo.team.util.tcp.server.IConnectionHandler;
 public interface IClientManager {
 
     IMessageAcceptor clientJoined(String ip, IConnectionHandler connectionHandler);
-    
+
 }
