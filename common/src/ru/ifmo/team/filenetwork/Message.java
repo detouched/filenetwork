@@ -6,8 +6,8 @@ import ru.ifmo.team.fileprotocol.*;
 import ru.ifmo.team.util.KeyGen;
 
 import java.util.HashSet;
-import java.util.Set;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * User: Daniel Penkin
@@ -16,7 +16,6 @@ import java.util.Random;
  */
 public class Message {
 
-    private static final Random random = new Random();
     public static final int SID_LENGTH = 16;
 
     private final Action action;

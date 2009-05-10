@@ -5,7 +5,6 @@ import ru.ifmo.team.util.logging.PrefixLogger;
 
 import java.io.*;
 import java.net.SocketTimeoutException;
-import java.util.Arrays;
 
 /**
  * User: Daniel Penkin

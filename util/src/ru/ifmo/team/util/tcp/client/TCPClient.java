@@ -40,6 +40,7 @@ public class TCPClient implements IClient {
             try {
                 logger.log("Sending message: " + message);
                 msgStreamer.sendMsg(message);
+                logger.log("Message sent");
             } catch (EncodingException e) {
                 logger.log("Unable to send message, closing connection: " + ExceptionExpander.expandException(e));
                 shutdown = true;
@@ -117,7 +118,6 @@ public class TCPClient implements IClient {
                 } catch (EncodingException e) {
                     logger.log("Unable to receive message, closing connection: " + ExceptionExpander.expandException(e));
                     shutdown = true;
-//                TODO close or not to close
                 }
             }
             logger.log("Client thread stopped");

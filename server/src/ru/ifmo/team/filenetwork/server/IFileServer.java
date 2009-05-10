@@ -2,8 +2,6 @@ package ru.ifmo.team.filenetwork.server;
 
 import ru.ifmo.team.filenetwork.Message;
 import ru.ifmo.team.filenetwork.SharedFile;
-import ru.ifmo.team.filenetwork.actions.GetAction;
-import ru.ifmo.team.filenetwork.actions.TransferAction;
 import ru.ifmo.team.util.IClientManager;
 
 import java.util.Set;

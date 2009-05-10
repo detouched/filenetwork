@@ -40,7 +40,7 @@ import java.util.Set;
         this.clientID = clientID;
         this.connectionHandler = connectionHandler;
         connectionHandler.registerMessageAcceptor(this);
-        this.logger = new PrefixLogger("CH_" + hashCode(), logger);
+        this.logger = new PrefixLogger("Client_" + hashCode(), logger);
         Thread sender = new Thread(new MessageSender());
         Thread processor = new Thread(new MessageProcessor());
         sender.setDaemon(true);
@@ -70,7 +70,7 @@ import java.util.Set;
         }
     }
 
-    public void clientLeft(String ip) {
+    public void connectionClosed(String ip) {
         shutDown();
         fileServer.clientLeft(clientID);
     }
@@ -146,10 +146,9 @@ import java.util.Set;
             }
             FileProtocolType.Direction.Enum dir = message.getDirection();
             if (dir == FileProtocolType.Direction.CS_RQ) {
-                logger.log("Processing Client->Server request");
                 Action action = message.getAction();
                 if (action != null) {
-                    String response;
+//                    String response;
                     switch (action.getActionType()) {
                         case ADD:
                             AddAction addAction = (AddAction) action;
@@ -169,7 +168,7 @@ import java.util.Set;
                             fileServer.addMessage(message);
                             break;
                         default:
-                            logger.log("Unrecognized message, closing connection: " + message.encodeMessage());
+                            logger.log("Unrecognized message type, closing connection");
                             shutDown();
                     }
                 }
@@ -182,10 +181,12 @@ import java.util.Set;
                             fileServer.addMessage(message);
                             break;
                         default:
-                            logger.log("Unrecognized message, closing connection: " + message.encodeMessage());
+                            logger.log("Unrecognized message type, closing connection");
                             shutDown();
                     }
                 }
+            } else {
+                logger.log("Received message from SERVER???");
             }
         }
     }

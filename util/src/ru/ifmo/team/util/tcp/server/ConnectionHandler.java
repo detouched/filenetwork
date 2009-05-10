@@ -35,7 +35,7 @@ import java.net.Socket;
     public ConnectionHandler(Socket socket, TCPServer server, Logger logger) {
         this.socket = socket;
         this.server = server;
-        this.logger = new PrefixLogger("CH_" + hashCode(), logger);
+        this.logger = new PrefixLogger("Connection_" + hashCode(), logger);
         this.ip = socket.getRemoteSocketAddress().toString();
     }
 
@@ -52,14 +52,13 @@ import java.net.Socket;
             return;
         }
 
-//        if (messageAcceptor == null) {
-//            try {
-//                ip.wait();
-//            } catch (InterruptedException ignored) {
-//
-//            }
-//        }
-        while (messageAcceptor == null) {
+        synchronized (ip) {
+            if (messageAcceptor == null) {
+                try {
+                    ip.wait();
+                } catch (InterruptedException ignored) {
+                }
+            }
         }
 
         while (!shutdown) {
@@ -87,6 +86,7 @@ import java.net.Socket;
             try {
                 logger.log("Sending message: " + message);
                 msgStreamer.sendMsg(message);
+                logger.log("Message sent");
             } catch (EncodingException e) {
                 String msg = "Unable to send message, closing connection";
                 logger.log(msg + ": " + ExceptionExpander.expandException(e));
@@ -101,7 +101,9 @@ import java.net.Socket;
 
     public void registerMessageAcceptor(IMessageAcceptor messageAcceptor) {
         this.messageAcceptor = messageAcceptor;
-//        ip.notify();
+        synchronized (ip) {
+            ip.notify();
+        }
     }
 
     private void finish() {

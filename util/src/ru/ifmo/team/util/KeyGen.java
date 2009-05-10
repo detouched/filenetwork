@@ -8,7 +8,7 @@ import java.util.Random;
  * Version: 1.0
  */
 public class KeyGen {
-    
+
     private static final Random random = new Random();
 
     public static String generate(int length) {
@@ -17,20 +17,18 @@ public class KeyGen {
         return byte2hex(cid, 0, cid.length);
     }
 
-    private static String byte2hex(byte in[], int offset, int len)
-    {
-      String hex;
-      StringBuffer result = new StringBuffer(len * 2);
-      int i;
+    private static String byte2hex(byte in[], int offset, int len) {
+        String hex;
+        StringBuffer result = new StringBuffer(len * 2);
+        int i;
 
-      for (i = offset, len+=offset; i < len; i++)
-      {
-        hex = Integer.toHexString(in[i] & 0xff);
-        if (hex.length() == 1) result.append('0').append(hex);
-        else result.append(hex);
-      }
+        for (i = offset, len += offset; i < len; i++) {
+            hex = Integer.toHexString(in[i] & 0xff);
+            if (hex.length() == 1) result.append('0').append(hex);
+            else result.append(hex);
+        }
 
-      return result.toString().toUpperCase();
+        return result.toString().toUpperCase();
     }
 
 }

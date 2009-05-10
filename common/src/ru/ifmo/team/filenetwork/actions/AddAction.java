@@ -4,9 +4,9 @@ import ru.ifmo.team.filenetwork.SharedFile;
 import ru.ifmo.team.fileprotocol.FileSetType;
 import ru.ifmo.team.fileprotocol.FileType;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Collections;
 
 /**
  * User: Daniel Penkin

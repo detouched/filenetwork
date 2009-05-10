@@ -9,6 +9,6 @@ public interface IMessageAcceptor {
 
     void acceptMessage(String ip, String message);
 
-    void clientLeft(String ip);
+    void connectionClosed(String ip);
 
 }
