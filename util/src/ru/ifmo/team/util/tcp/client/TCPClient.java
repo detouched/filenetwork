@@ -43,7 +43,7 @@ public class TCPClient implements IClient {
                 logger.log("Message sent");
             } catch (EncodingException e) {
                 logger.log("Unable to send message, closing connection: " + ExceptionExpander.expandException(e));
-                shutdown = true;
+                shutDown();
             }
         } else {
             throw new ClientException("Unable to send message: client is not started");
@@ -90,7 +90,7 @@ public class TCPClient implements IClient {
     public void stop() {
         logger.log("Stopping client...");
         long time = System.currentTimeMillis();
-        shutdown = true;
+        shutDown();
         logger.log("Waiting for client thread to terminate");
         try {
             clientThread.join(3000);
@@ -117,10 +117,15 @@ public class TCPClient implements IClient {
                     logger.log("Message Streamer interrupted while waiting for a message");
                 } catch (EncodingException e) {
                     logger.log("Unable to receive message, closing connection: " + ExceptionExpander.expandException(e));
-                    shutdown = true;
+                    shutDown();
                 }
             }
             logger.log("Client thread stopped");
         }
+    }
+
+    private void shutDown() {
+        shutdown = true;
+        messageAcceptor.connectionClosed("server");
     }
 }

@@ -262,11 +262,11 @@ public class FileClient implements IFileClient {
     }
 
     private void shutDown() {
-        tcpClient.stop();
         manager.connectionClosed();
     }
 
     public void connectionClosed(String ip) {
+        logger.log("Connection was closed, exiting");
         shutDown();
     }
 

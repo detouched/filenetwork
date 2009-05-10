@@ -59,6 +59,7 @@ import java.util.Set;
     public void shutDown() {
         shutdown = true;
         connectionHandler.shutDown();
+        fileServer.clientLeft(clientID);
     }
 
     public void fileSetUpdated(Set<SharedFile> added, Set<SharedFile> removed) {

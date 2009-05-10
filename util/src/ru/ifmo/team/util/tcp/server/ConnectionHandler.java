@@ -119,6 +119,7 @@ import java.net.Socket;
         } catch (IOException e) {
             logger.log("Unable to close socket properly: " + e.getMessage());
         }
+        messageAcceptor.connectionClosed(ip);
         server.unregisterConnection(ip);
         logger.log("ConnectionHandler stopped");
     }
