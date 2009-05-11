@@ -6,7 +6,6 @@ import ru.ifmo.team.fileprotocol.*;
 import ru.ifmo.team.util.KeyGen;
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 /**
@@ -140,7 +139,7 @@ public class Message {
         SharedFile sharedFile = readSharedFile(filePartSection.getFile());
         return new TransferAction(sharedFile, filePartSection.getNumber(),
                 filePartSection.getTotal(), filePartSection.getHash(),
-                filePartSection.getPart().getStringValue());
+                filePartSection.getPart());
     }
 
     private static SharedFile readSharedFile(FileType fileSection) {

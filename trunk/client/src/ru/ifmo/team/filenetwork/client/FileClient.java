@@ -163,7 +163,7 @@ public class FileClient implements IFileClient {
         Message request = new Message(action, FileProtocolType.Direction.CS_RQ, clientID, sid, null);
         try {
             downloads.put(sid, download);
-            tcpClient.sendMessage(request.encodeMessage());            
+            tcpClient.sendMessage(request.encodeMessage());
             return sid;
         } catch (ClientException e) {
             logger.log("Unable to start download: " + ExceptionExpander.expandException(e));
@@ -338,16 +338,19 @@ public class FileClient implements IFileClient {
         public void run() {
             try {
                 input = new FileInputStream(file);
-                StringBuilder sb = new StringBuilder();
-                int counter;
+                byte[] stor = new byte[0];
                 byte[] buf = new byte[1024];
+                int counter;
                 do {
                     counter = input.read(buf);
                     if (counter > 0) {
-                        sb.append(new String(buf, 0, counter));
+                        byte[] t = new byte[stor.length + counter];
+                        System.arraycopy(stor, 0, t, 0, stor.length);
+                        System.arraycopy(buf, 0, t, stor.length, counter);
+                        stor = t;
                     }
                 } while (counter > 0);
-                TransferAction action = new TransferAction(sharedFile, 1, 1, sharedFile.getHash(), sb.toString());
+                TransferAction action = new TransferAction(sharedFile, 1, 1, sharedFile.getHash(), stor);
                 Message response = new Message(action, FileProtocolType.Direction.CS_RS, clientID, sid, null);
                 tcpClient.sendMessage(response.encodeMessage());
             } catch (Exception e) {

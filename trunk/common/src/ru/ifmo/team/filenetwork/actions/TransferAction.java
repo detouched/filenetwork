@@ -15,9 +15,9 @@ public class TransferAction extends Action {
     private final int partNumber;
     private final int partsTotal;
     private final String partHash;
-    private final String data;
+    private final byte[] data;
 
-    public TransferAction(SharedFile file, int partNumber, int partsTotal, String partHash, String data) {
+    public TransferAction(SharedFile file, int partNumber, int partsTotal, String partHash, byte[] data) {
         super(ActionType.TRANSFER);
         this.file = file;
         this.partNumber = partNumber;
@@ -42,7 +42,7 @@ public class TransferAction extends Action {
         return partHash;
     }
 
-    public String getData() {
+    public byte[] getData() {
         return data;
     }
 
@@ -62,8 +62,7 @@ public class TransferAction extends Action {
         filePartSection.setNumber(partNumber);
         filePartSection.setTotal(partsTotal);
         filePartSection.setHash(partHash);
-        FilePartType.Part part = filePartSection.addNewPart();
-        part.setStringValue(data);
+        filePartSection.setPart(data);
         return filePartSection;
     }
 }
