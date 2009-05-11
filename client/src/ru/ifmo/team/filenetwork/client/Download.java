@@ -46,7 +46,7 @@ import java.io.IOException;
         return file;
     }
 
-    public void processPart(int number, int total, String data) throws IOException {
+    public void processPart(int number, int total, byte[] data) throws IOException {
         if (!canWrite) {
             logger.log("Unable to process part: can't write to file");
             return;
@@ -55,7 +55,7 @@ import java.io.IOException;
             if (partCounter == 1) {
                 partTotal = total;
             }
-            output.write(data.getBytes());
+            output.write(data);
             partCounter++;
         }
         checkReadiness();
