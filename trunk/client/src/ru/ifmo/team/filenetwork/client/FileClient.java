@@ -28,7 +28,7 @@ public class FileClient implements IFileClient {
 
     private final Map<SharedFile, File> sharedLocalFiles = new LinkedHashMap<SharedFile, File>();
     private final Set<File> lockedFiles = new HashSet<File>();
-    private final Set<SharedFile> sharedForeignFiles = new LinkedHashSet<SharedFile>();
+    private final Map<String, SharedFile> sharedForeignFiles = new LinkedHashMap<String, SharedFile>();
     private final Set<IFileWatcher> fileWatchers = new HashSet<IFileWatcher>();
     private final Map<String, Download> downloads = new HashMap<String, Download>();
     private final PrefixLogger logger;
@@ -66,26 +66,34 @@ public class FileClient implements IFileClient {
                     logger.log("Unable to calculate checksum: " + ExceptionExpander.expandException(e));
                     return false;
                 }
-                long size = file.length();
                 //TODO lock file
-                added.put(new SharedFile(fileDesc.getKey().getName(),
-                        fileDesc.getValue(), size, checksum + ""), file);
+                SharedFile f;
+                if ((f = sharedForeignFiles.get(checksum + "")) != null) {
+                    logger.log("File " + file.getName() + " is already shared, adding to local list");
+                    added.put(f, file);
+                } else {
+                    long size = file.length();
+                    added.put(new SharedFile(fileDesc.getKey().getName(),
+                            fileDesc.getValue(), size, checksum + ""), file);
+                }
             } else {
-                logger.log("File " + file.getName() + " is already shared");
+                logger.log("File " + file.getName() + " is already locally shared");
             }
         }
-        synchronized (sharedLocalFiles) {
+        if (added.size() > 0) {
             sharedLocalFiles.putAll(added);
+            fireListUpdated();
+            AddAction action = new AddAction(added.keySet());
+            Message request = new Message(action, FileProtocolType.Direction.CS_RQ, clientID, null);
+            try {
+                tcpClient.sendMessage(request.encodeMessage());
+                return true;
+            } catch (ClientException e) {
+                logger.log("Unable to add files: " + ExceptionExpander.expandException(e));
+                return false;
+            }
         }
-        AddAction action = new AddAction(added.keySet());
-        Message request = new Message(action, FileProtocolType.Direction.CS_RQ, clientID, null);
-        try {
-            tcpClient.sendMessage(request.encodeMessage());
-            return true;
-        } catch (ClientException e) {
-            logger.log("Unable to add files: " + ExceptionExpander.expandException(e));
-            return false;
-        }
+        return false;
     }
 
     private long calculateChecksum(File file) throws IOException {
@@ -126,7 +134,7 @@ public class FileClient implements IFileClient {
     }
 
     public Set<SharedFile> getSharedFilesSet() {
-        return Collections.unmodifiableSet(sharedForeignFiles);
+        return new LinkedHashSet<SharedFile>(sharedForeignFiles.values());
     }
 
     public Set<SharedFile> getLocalSharedFileSet() {
@@ -140,6 +148,9 @@ public class FileClient implements IFileClient {
     }
 
     public String downloadFile(SharedFile sharedFile, File file) {
+        if (sharedLocalFiles.containsKey(sharedFile)) {
+            return null;
+        }
         if (clientID == null) {
             return null;
         }
@@ -151,8 +162,8 @@ public class FileClient implements IFileClient {
         GetAction action = new GetAction(sharedFile, 0, 0);
         Message request = new Message(action, FileProtocolType.Direction.CS_RQ, clientID, sid, null);
         try {
-            tcpClient.sendMessage(request.encodeMessage());
             downloads.put(sid, download);
+            tcpClient.sendMessage(request.encodeMessage());            
             return sid;
         } catch (ClientException e) {
             logger.log("Unable to start download: " + ExceptionExpander.expandException(e));
@@ -171,6 +182,34 @@ public class FileClient implements IFileClient {
 
     private void removeDownload(String sid) {
         downloads.remove(sid);
+    }
+
+    private void updateForeignSharedFiles(Set<SharedFile> added, Set<SharedFile> removed) {
+        boolean updated = false;
+        if (added != null) {
+            for (SharedFile file : added) {
+                SharedFile foreign = sharedForeignFiles.get(file.getHash());
+                if (foreign == null) {
+                    sharedForeignFiles.put(file.getHash(), file);
+                    logger.log("File " + foreign + " added");
+                    updated = true;
+                } else {
+                    logger.log("File " + foreign + " skipped (is already shared)");
+                }
+            }
+        }
+        if (removed != null) {
+            for (SharedFile file : removed) {
+                SharedFile foreign = sharedForeignFiles.remove(file.getHash());
+                if (foreign != null) {
+                    logger.log("File " + foreign + " removed");
+                    updated = true;
+                }
+            }
+        }
+        if (updated) {
+            fireListUpdated();
+        }
     }
 
     public void acceptMessage(String ip, String message) {
@@ -203,21 +242,29 @@ public class FileClient implements IFileClient {
                         case ADD:
                             AddAction addAction = (AddAction) action;
                             logger.log("Adding files: " + addAction.getFiles());
-                            sharedForeignFiles.addAll(addAction.getFiles());
-                            fireListUpdated();
+                            updateForeignSharedFiles(addAction.getFiles(), null);
                             break;
                         case REMOVE:
                             RemoveAction removeAction = (RemoveAction) action;
                             logger.log("Removing files: " + removeAction.getFiles());
-                            sharedForeignFiles.removeAll(removeAction.getFiles());
+                            updateForeignSharedFiles(null, removeAction.getFiles());
                             break;
                         case GET:
                             GetAction getAction = (GetAction) action;
-                            File file = sharedLocalFiles.get(getAction.getFile());
-                            if (file != null) {
+                            SharedFile rq = getAction.getFile();
+                            File local = null;
+                            synchronized (sharedLocalFiles) {
+                                for (SharedFile file : sharedLocalFiles.keySet()) {
+                                    if (file.getHash().equals(rq.getHash())) {
+                                        local = sharedLocalFiles.get(file);
+                                        break;
+                                    }
+                                }
+                            }
+                            if (local != null) {
                                 logger.log("Received request of file " + getAction.getFile().getName() +
-                                        " [stored on disk: " + file.getPath() + "]");
-                                new Thread(new FileSender(getAction.getFile(), file, msg.getSID(),
+                                        " [stored on disk: " + local.getPath() + "]");
+                                new Thread(new FileSender(getAction.getFile(), local, msg.getSID(),
                                         getAction.getFromPart(), getAction.getTillPart())
                                 ).start();
                             } else {

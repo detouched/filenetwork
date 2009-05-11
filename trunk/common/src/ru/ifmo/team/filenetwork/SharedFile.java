@@ -56,6 +56,5 @@ public class SharedFile {
 
     public String toString() {
         return name + " [ " + (double) size / 1024 + " Kb ]";
-    }
-
+    }    
 }
