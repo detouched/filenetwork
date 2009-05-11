@@ -57,9 +57,7 @@ import java.util.Set;
     }
 
     public void shutDown() {
-        shutdown = true;
         connectionHandler.shutDown();
-        fileServer.clientLeft(clientID);
     }
 
     public void fileSetUpdated(Set<SharedFile> added, Set<SharedFile> removed) {
@@ -72,7 +70,7 @@ import java.util.Set;
     }
 
     public void connectionClosed(String ip) {
-        shutDown();
+        shutdown = true;
         fileServer.clientLeft(clientID);
     }
 
@@ -84,7 +82,7 @@ import java.util.Set;
             }
         } catch (MessagingException e) {
             logger.log("Unable to accept message, closing connection: " + ExceptionExpander.expandException(e));
-            shutDown();
+            connectionHandler.shutDown();
         }
     }
 
@@ -104,7 +102,7 @@ import java.util.Set;
                             connectionHandler.sendMessage(outMsg);
                         } catch (ServerException e) {
                             logger.log("Unable to send message, closing connection: " + ExceptionExpander.expandException(e));
-                            shutDown();
+                            connectionHandler.shutDown();
                         }
                     }
                 }
@@ -128,7 +126,7 @@ import java.util.Set;
                         } catch (ServerException e) {
                             logger.log("Unable to process message, closing connection: " +
                                     ExceptionExpander.expandException(e));
-                            shutDown();
+                            connectionHandler.shutDown();
                         }
                     }
                 }
@@ -142,7 +140,7 @@ import java.util.Set;
             String id = message.getClientID();
             if (!clientID.equals(id)) {
                 logger.log("Identification failed: \"" + id + "\" received but\"" + clientID + "\"expected");
-                shutDown();
+                connectionHandler.shutDown();
                 return;
             }
             FileProtocolType.Direction.Enum dir = message.getDirection();
@@ -170,7 +168,7 @@ import java.util.Set;
                             break;
                         default:
                             logger.log("Unrecognized message type, closing connection");
-                            shutDown();
+                            connectionHandler.shutDown();
                     }
                 }
             } else if (dir == FileProtocolType.Direction.CS_RS) {
@@ -183,7 +181,7 @@ import java.util.Set;
                             break;
                         default:
                             logger.log("Unrecognized message type, closing connection");
-                            shutDown();
+                            connectionHandler.shutDown();
                     }
                 }
             } else {

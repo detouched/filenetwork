@@ -37,20 +37,18 @@ import java.net.Socket;
         this.server = server;
         this.logger = new PrefixLogger("Connection_" + hashCode(), logger);
         this.ip = socket.getRemoteSocketAddress().toString();
+        try {
+            is = socket.getInputStream();
+            os = socket.getOutputStream();
+            msgStreamer = new MessageStreamer(is, os, logger);
+        } catch (IOException e) {
+            this.logger.log("Stream mapping failed: " + e.getMessage());
+            finish();
+        }
     }
 
     public void run() {
         logger.log("Remote address connected: " + ip);
-
-        try {
-            is = socket.getInputStream();
-            os = socket.getOutputStream();
-            msgStreamer = new MessageStreamer(is, os, logger.getBaseLogger());
-        } catch (IOException e) {
-            logger.log("Stream mapping failed: " + e.getMessage());
-            finish();
-            return;
-        }
 
         synchronized (ip) {
             if (messageAcceptor == null) {

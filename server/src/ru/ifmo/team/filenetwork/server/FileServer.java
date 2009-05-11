@@ -100,22 +100,15 @@ public class FileServer implements IFileServer {
     public void clientLeft(String clientID) {
         handlers.remove(clientID);
         Set<SharedFile> removedFiles = new HashSet<SharedFile>();
-        Set<String> removedHashes = new HashSet<String>();
         Set<String> removedTransfers = new HashSet<String>();
         synchronized (monitor) {
             for (Map.Entry<String, Set<String>> file : fileOwners.entrySet()) {
                 Set<String> owners = file.getValue();
-                owners.remove(clientID);
-                if (owners.size() == 0) {
-                    removedHashes.add(file.getKey());
+                if (owners.contains(clientID)) {
+                    removedFiles.add(sharedFiles.get(file.getKey()));
                 }
             }
-            for (String hash : removedHashes) {
-                fileOwners.remove(hash);
-                SharedFile file = sharedFiles.remove(hash);
-                removedFiles.add(file);
-                logger.log("File " + file.getName() + " [" + file.getHash() + "] removed (client left)");
-            }
+            removeFiles(removedFiles, clientID);
             for (Map.Entry<String, String> transfer : transfers.entrySet()) {
                 if (transfer.getValue().equals(clientID)) {
                     removedTransfers.add(transfer.getKey());
@@ -125,9 +118,6 @@ public class FileServer implements IFileServer {
                 String cid = transfers.remove(sid);
                 logger.log("Transfer to " + cid + " removed: client left");
             }
-        }
-        if (removedFiles.size() > 0) {
-            fireUpdatedFileSet(null, removedFiles);
         }
     }
 
@@ -142,7 +132,7 @@ public class FileServer implements IFileServer {
         if (action != null) {
             switch (action.getActionType()) {
                 case GET:
-                    processGet(message.getSID(), (GetAction) action);
+                    processGet(message.getSID(), message.getClientID(), (GetAction) action);
                     break;
                 case TRANSFER:
                     processTransfer(message.getSID(), (TransferAction) action);
@@ -153,14 +143,14 @@ public class FileServer implements IFileServer {
         }
     }
 
-    private void processGet(String sid, GetAction action) {
+    private void processGet(String sid, String cid, GetAction action) {
         String hash = action.getFile().getHash();
         Set<String> owners = fileOwners.get(hash);
         if ((owners != null) && (owners.size() > 0)) {
             String[] arOwners = owners.toArray(new String[1]);
             String seeder = arOwners[random.nextInt(arOwners.length)];
             synchronized (monitor) {
-                transfers.put(sid, seeder);
+                transfers.put(sid, cid);
             }
             Message request = new Message(action, FileProtocolType.Direction.SC_RQ, seeder, sid, null);
             handlers.get(seeder).addToOutbox(request);
