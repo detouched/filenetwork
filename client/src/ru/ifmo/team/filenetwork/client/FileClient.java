@@ -59,6 +59,10 @@ public class FileClient implements IFileClient {
         for (Map.Entry<File, String> fileDesc : files.entrySet()) {
             File file = fileDesc.getKey();
             if (!lockedFiles.contains(file)) {
+                if (file.length() > Integer.MAX_VALUE) {
+                    logger.log("Unable to add file: file too big");
+                    return false;
+                }
                 long checksum;
                 try {
                     checksum = calculateChecksum(file);
@@ -338,18 +342,11 @@ public class FileClient implements IFileClient {
         public void run() {
             try {
                 input = new FileInputStream(file);
-                byte[] stor = new byte[0];
-                byte[] buf = new byte[1024];
-                int counter;
+                byte[] stor = new byte[(int) file.length()];
+                int offset = 0;
                 do {
-                    counter = input.read(buf);
-                    if (counter > 0) {
-                        byte[] t = new byte[stor.length + counter];
-                        System.arraycopy(stor, 0, t, 0, stor.length);
-                        System.arraycopy(buf, 0, t, stor.length, counter);
-                        stor = t;
-                    }
-                } while (counter > 0);
+                    offset += input.read(stor, offset, stor.length - offset);
+                } while (offset < stor.length);
                 TransferAction action = new TransferAction(sharedFile, 1, 1, sharedFile.getHash(), stor);
                 Message response = new Message(action, FileProtocolType.Direction.CS_RS, clientID, sid, null);
                 tcpClient.sendMessage(response.encodeMessage());

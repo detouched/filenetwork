@@ -5,6 +5,7 @@ import ru.ifmo.team.filenetwork.client.FileClient;
 import ru.ifmo.team.filenetwork.client.IFileClient;
 import ru.ifmo.team.filenetwork.client.IFileWatcher;
 import ru.ifmo.team.filenetwork.client.IManager;
+import ru.ifmo.team.util.PropReader;
 import ru.ifmo.team.util.logging.Logger;
 import ru.ifmo.team.util.tcp.client.IClient;
 import ru.ifmo.team.util.tcp.client.TCPClient;
@@ -12,8 +13,10 @@ import ru.ifmo.team.util.tcp.client.TCPClient;
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.TitledBorder;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,8 +29,8 @@ import java.util.Set;
  */
 public class ClientGUI extends JFrame implements IFileWatcher, IManager {
 
-    private static final String clientLog = "/Users/danielpenkin/Desktop/logs/client.log";
-    private static final String clientTCPLog = "/Users/danielpenkin/Desktop/logs/client_tcp.log";
+    private static final String LOG_FILE_NAME = "client";
+    private static final String PROPERTIES_FILE_NAME = "client.properties";
 
     private final FileListModel foreignModel = new FileListModel();
     private final FileListModel localModel = new FileListModel();
@@ -39,9 +42,11 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
 
     private IFileClient fileClient;
 
+    private String host;
+    private int port;
+
     public ClientGUI() {
         super("File Network tcpClient");
-
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         localList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -136,9 +141,48 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
 
         pack();
 
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        setLocation((int) ((screen.getWidth() - getWidth()) / 2),
+                (int) ((screen.getHeight() - getHeight()) / 2));
 
-        Logger clientLogger = new Logger(clientLog);
-        Logger clientTCPLogger = new Logger(clientTCPLog);
+        Map<String, String> props = null;
+        boolean propertiesRead = true;
+        try {
+            props = PropReader.readProperties(new File(PROPERTIES_FILE_NAME));
+        } catch (IOException e) {
+            propertiesRead = false; // not loaded
+        }
+
+        String logFile = LOG_FILE_NAME;
+
+        if (propertiesRead) {
+            String logFolder = props.get("log_folder");
+            if (logFolder != null) {
+                logFile = logFolder + logFile;
+            } else {
+                String msg = "log_folder property not found, using current folder for logging";
+                System.out.println(msg);
+                JOptionPane.showMessageDialog(this, msg, "Warning", JOptionPane.WARNING_MESSAGE);
+            }
+            host = props.get("server_host");
+            if (host == null) {
+                errorExit("host property not found");
+            }
+            try {
+                port = Integer.parseInt(props.get("server_port"));
+            } catch (NumberFormatException e) {
+                errorExit("port property not found or not correct");
+            }
+        }
+
+        logFile += "_" + System.currentTimeMillis() % 1000;
+
+        String log = logFile + ".log";
+        String tcpLog = logFile + "_tcp.log";
+        System.out.println("Trying to log into Client log: " + log);
+        System.out.println("Trying to log into Client_tcp log: " + tcpLog);
+        Logger clientLogger = new Logger(log);
+        Logger clientTCPLogger = new Logger(tcpLog);
         clientLogger.clearLog();
         clientTCPLogger.clearLog();
         fileClient = new FileClient(this, clientLogger);
@@ -146,10 +190,15 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
         IClient tcpClient = new TCPClient(fileClient, clientTCPLogger);
         fileClient.registerTCPClient(tcpClient);
 
-        if (!tcpClient.start("127.0.0.1", 5555)) {
-            System.out.println("Unable to start client, exiting");
-            System.exit(-1);
+        if (!tcpClient.start(host, port)) {
+            errorExit("Unable to start tcp client, see logs for detailed information");
         }
+    }
+
+    private void errorExit(String message) {
+        System.out.println(message);
+        JOptionPane.showMessageDialog(this, message, "Error on starting", JOptionPane.ERROR_MESSAGE);
+        System.exit(-1);
     }
 
     public void downloadCompleted(String id, File file) {
@@ -165,8 +214,8 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
     }
 
     public void connectionClosed() {
-        System.out.println("Connection closed, see logs, exiting");
-        System.exit(-2);
+        errorExit("Connection with server was close, see logs for detailed information.\n" +
+                "Client can't work anymore until server is up");
     }
 
     public static void main(String[] args) {
