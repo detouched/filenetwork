@@ -195,7 +195,7 @@ public class FileClient implements IFileClient {
                 SharedFile foreign = sharedForeignFiles.get(file.getHash());
                 if (foreign == null) {
                     sharedForeignFiles.put(file.getHash(), file);
-                    logger.log("File " + foreign + " added");
+                    logger.log("File " + file + " added");
                     updated = true;
                 } else {
                     logger.log("File " + foreign + " skipped (is already shared)");

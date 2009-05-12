@@ -146,16 +146,15 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
                 (int) ((screen.getHeight() - getHeight()) / 2));
 
         Map<String, String> props = null;
-        boolean propertiesRead = true;
         try {
             props = PropReader.readProperties(new File(PROPERTIES_FILE_NAME));
         } catch (IOException e) {
-            propertiesRead = false; // not loaded
+            errorExit("Cannot read properties file (" + PROPERTIES_FILE_NAME + "): " + e.getMessage());
         }
 
         String logFile = LOG_FILE_NAME;
 
-        if (propertiesRead) {
+        if (props != null) {
             String logFolder = props.get("log_folder");
             if (logFolder != null) {
                 logFile = logFolder + logFile;
@@ -171,8 +170,13 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
             try {
                 port = Integer.parseInt(props.get("server_port"));
             } catch (NumberFormatException e) {
-                errorExit("port property not found or not correct");
+                port = 0;
             }
+            if (port == 0) {
+                errorExit("port property not found or set incorrect");
+            }
+        } else {
+            errorExit("Properties were not read properly");            
         }
 
         logFile += "_" + System.currentTimeMillis() % 1000;
@@ -191,7 +195,7 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
         fileClient.registerTCPClient(tcpClient);
 
         if (!tcpClient.start(host, port)) {
-            errorExit("Unable to start tcp client, see logs for detailed information");
+            errorExit("Unable to start TCP client, see logs for detailed information");
         }
     }
 
