@@ -176,7 +176,7 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
                 errorExit("port property not found or set incorrect");
             }
         } else {
-            errorExit("Properties were not read properly");            
+            errorExit("Properties were not read properly");
         }
 
         logFile += "_" + System.currentTimeMillis() % 1000;
