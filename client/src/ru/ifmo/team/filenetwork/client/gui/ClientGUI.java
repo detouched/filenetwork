@@ -5,14 +5,15 @@ import ru.ifmo.team.filenetwork.client.FileClient;
 import ru.ifmo.team.filenetwork.client.IFileClient;
 import ru.ifmo.team.filenetwork.client.IFileWatcher;
 import ru.ifmo.team.filenetwork.client.IManager;
+import ru.ifmo.team.filenetwork.client.gui.file_info.FileInfoPanel;
 import ru.ifmo.team.util.PropReader;
 import ru.ifmo.team.util.logging.Logger;
 import ru.ifmo.team.util.tcp.client.IClient;
 import ru.ifmo.team.util.tcp.client.TCPClient;
 
 import javax.swing.*;
-import javax.swing.border.BevelBorder;
-import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
@@ -31,6 +32,8 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
 
     private static final String LOG_FILE_NAME = "client";
     private static final String PROPERTIES_FILE_NAME = "client.properties";
+    private static final int WINDOW_HEIGHT = 400;
+    private static final int WINDOW_WIDTH = 600;
 
     private final FileListModel foreignModel = new FileListModel();
     private final FileListModel localModel = new FileListModel();
@@ -38,7 +41,7 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
     private final Map<String, SharedFile> downloads = new HashMap<String, SharedFile>();
 
     private final JList foreignList = new JList(foreignModel);
-    private final JList localList = new JList(localModel);
+    private final JList localFilesList = new JList(localModel);
 
     private IFileClient fileClient;
 
@@ -48,27 +51,25 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
     public ClientGUI() {
         super("File Network tcpClient");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-
-        localList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        setMinimumSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
+        localFilesList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         foreignList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        localList.setPrototypeCellValue("Some file shall be here w/size");
+        localFilesList.setPrototypeCellValue("Some file shall be here w/size");
         foreignList.setPrototypeCellValue("Some file shall be here w/size");
+        final JPanel fileInfoPanel = new FileInfoPanel(foreignList);
+        foreignList.addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent e) {
+                fileInfoPanel.updateUI();
+            }
+        });
 
-        JPanel foreign = new JPanel();
-        foreign.setBorder(new TitledBorder(new BevelBorder(BevelBorder.LOWERED), "Shared files"));
-        foreign.add(new JScrollPane(foreignList));
+        JTabbedPane tabbedPane = new JTabbedPane();
+        final JScrollPane sharedScrollPane = new JScrollPane(foreignList);
+        final JScrollPane localFilesPane = new JScrollPane(localFilesList);
 
-        JPanel local = new JPanel();
-        local.setBorder(new TitledBorder(new BevelBorder(BevelBorder.LOWERED), "Local files"));
-        local.add(new JScrollPane(localList));
 
-        Box listPanel = new Box(BoxLayout.X_AXIS);
-        listPanel.add(foreign);
-        listPanel.add(Box.createHorizontalStrut(5));
-        listPanel.add(local);
-
-        JButton addButton = new JButton(new AbstractAction("Add file") {
+        final AbstractAction addFileAction = new AbstractAction("Add file") {
             public void actionPerformed(ActionEvent actionEvent) {
                 JFileChooser dlg = new JFileChooser();
                 int returnVal = dlg.showOpenDialog(ClientGUI.this);
@@ -84,11 +85,11 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
                     }
                 }
             }
-        });
-
-        JButton removeButton = new JButton(new AbstractAction("Remove file") {
+        };
+        JButton addButton = new JButton(addFileAction);
+        final AbstractAction removeFileAction = new AbstractAction("Remove file") {
             public void actionPerformed(ActionEvent actionEvent) {
-                SharedFile file = (SharedFile) localList.getSelectedValue();
+                SharedFile file = (SharedFile) localFilesList.getSelectedValue();
                 if (file != null) {
                     int res = JOptionPane.showConfirmDialog(ClientGUI.this, "Are you sure you want to delete file?",
                             "Confirm deletion", JOptionPane.YES_NO_OPTION);
@@ -102,9 +103,9 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
                     }
                 }
             }
-        });
-
-        JButton getButton = new JButton(new AbstractAction("Get file") {
+        };
+        JButton removeButton = new JButton(removeFileAction);
+        final AbstractAction getFileAction = new AbstractAction("Get file") {
             public void actionPerformed(ActionEvent actionEvent) {
                 SharedFile file = (SharedFile) foreignList.getSelectedValue();
                 if (file != null) {
@@ -122,28 +123,29 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
                     }
                 }
             }
-        });
-
-        Box buttonPanel = Box.createHorizontalBox();
-        buttonPanel.add(addButton);
-        buttonPanel.add(Box.createVerticalStrut(5));
-        buttonPanel.add(removeButton);
-        buttonPanel.add(Box.createVerticalStrut(5));
-        buttonPanel.add(getButton);
+        };
+        JButton getButton = new JButton(getFileAction);
+        JPanel localButtonBox = new JPanel();
+        localButtonBox.add(addButton);
+        localButtonBox.add(removeButton);
+        localButtonBox.add(getButton);
 
 
-        Box mainPanel = Box.createVerticalBox();
-        mainPanel.add(listPanel);
-        mainPanel.add(Box.createVerticalStrut(5));
-        mainPanel.add(buttonPanel);
+        fileInfoPanel.add(getButton);
 
-        getContentPane().add(mainPanel);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sharedScrollPane, fileInfoPanel);
+        splitPane.setResizeWeight(0.7);
+        tabbedPane.addTab("Shared files", splitPane);
+        JPanel localPane = new JPanel();
+        localPane.add(localFilesPane);
+        localPane.add(localButtonBox);
+        tabbedPane.addTab("Local files", localPane);
+
+
+        getContentPane().add(tabbedPane);
 
         pack();
-
-        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-        setLocation((int) ((screen.getWidth() - getWidth()) / 2),
-                (int) ((screen.getHeight() - getHeight()) / 2));
+        moveWindowToCenter();
 
         Map<String, String> props = null;
         try {
@@ -197,6 +199,12 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
         if (!tcpClient.start(host, port)) {
             errorExit("Unable to start TCP client, see logs for detailed information");
         }
+    }
+
+    private void moveWindowToCenter() {
+        Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        setLocation((int) ((screen.getWidth() - getWidth()) / 2),
+                (int) ((screen.getHeight() - getHeight()) / 2));
     }
 
     private void errorExit(String message) {
