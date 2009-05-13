@@ -32,7 +32,7 @@ public class Logger {
 
             String msg = message.replace("\n\r", "");
             msg = msg.replace("\n", "");
-            msg = msg.replace("\t", " ");                    
+            msg = msg.replace("\t", " ");
             synchronized (MONITOR) {
                 FileWriter logWriter = new FileWriter(logFile, true);
                 //TODO date

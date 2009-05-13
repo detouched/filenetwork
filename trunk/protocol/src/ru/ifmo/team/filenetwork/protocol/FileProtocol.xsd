@@ -1,82 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSpy v2009 (http://www.altova.com) by Daniel Penkin (Home) -->
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://team.ifmo.ru/fileprotocol" xmlns:types="http://team.ifmo.ru/fileprotocol/types" targetNamespace="http://team.ifmo.ru/fileprotocol" elementFormDefault="qualified" attributeFormDefault="unqualified">
-	<xs:element name="FileProtocol" type="FileProtocolType">
-		<xs:annotation>
-			<xs:documentation>version 1.1</xs:documentation>
-		</xs:annotation>
-	</xs:element>
-	<xs:complexType name="FileType">
-		<xs:sequence minOccurs="0">
-			<xs:element name="Description" type="xs:string"/>
-		</xs:sequence>
-		<xs:attribute name="Name" type="xs:string" use="required"/>
-		<xs:attribute name="Hash" type="xs:string" use="required"/>
-		<xs:attribute name="Size" type="xs:long"/>
-	</xs:complexType>
-	<xs:complexType name="FileSetType">
-		<xs:sequence>
-			<xs:element name="File" type="FileType" maxOccurs="unbounded"/>
-		</xs:sequence>
-	</xs:complexType>
-	<xs:complexType name="FilePartType">
-		<xs:sequence>
-			<xs:element name="File" type="FileType"/>
-			<xs:element name="Part" type="xs:base64Binary"/>
-		</xs:sequence>
-		<xs:attribute name="Number" type="xs:int" use="required"/>
-		<xs:attribute name="Total" type="xs:int" use="required"/>
-		<xs:attribute name="Hash" type="xs:string" use="required"/>
-	</xs:complexType>
-	<xs:complexType name="BaseMessageType">
-		<xs:choice minOccurs="0">
-			<xs:element name="Add" type="FileSetType">
-				<xs:annotation>
-					<xs:documentation>Add file to share zone</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="Remove" type="FileSetType">
-				<xs:annotation>
-					<xs:documentation>Remove file from share zone</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="Get" type="GetType">
-				<xs:annotation>
-					<xs:documentation>Request file or part of file</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-			<xs:element name="FilePart" type="FilePartType">
-				<xs:annotation>
-					<xs:documentation>Part of file</xs:documentation>
-				</xs:annotation>
-			</xs:element>
-		</xs:choice>
-	</xs:complexType>
-	<xs:complexType name="GetType">
-		<xs:complexContent>
-			<xs:extension base="FileType">
-				<xs:attribute name="FromPart" type="xs:int"/>
-				<xs:attribute name="TillPart" type="xs:int"/>
-			</xs:extension>
-		</xs:complexContent>
-	</xs:complexType>
-	<xs:complexType name="FileProtocolType">
-		<xs:complexContent>
-			<xs:extension base="BaseMessageType">
-				<xs:attribute name="Direction" use="required">
-					<xs:simpleType>
-						<xs:restriction base="xs:string">
-							<xs:enumeration value="SCRq"/>
-							<xs:enumeration value="SCRs"/>
-							<xs:enumeration value="CSRq"/>
-							<xs:enumeration value="CSRs"/>
-						</xs:restriction>
-					</xs:simpleType>
-				</xs:attribute>
-				<xs:attribute name="ClientID" type="xs:string" use="required"/>
-				<xs:attribute name="SID" type="xs:string" use="required"/>
-				<xs:attribute name="Status" type="xs:string"/>
-			</xs:extension>
-		</xs:complexContent>
-	</xs:complexType>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://team.ifmo.ru/fileprotocol"
+           xmlns:types="http://team.ifmo.ru/fileprotocol/types" targetNamespace="http://team.ifmo.ru/fileprotocol"
+           elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="FileProtocol" type="FileProtocolType">
+        <xs:annotation>
+            <xs:documentation>version 1.1</xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    <xs:complexType name="FileType">
+        <xs:sequence minOccurs="0">
+            <xs:element name="Description" type="xs:string"/>
+        </xs:sequence>
+        <xs:attribute name="Name" type="xs:string" use="required"/>
+        <xs:attribute name="Hash" type="xs:string" use="required"/>
+        <xs:attribute name="Size" type="xs:long"/>
+    </xs:complexType>
+    <xs:complexType name="FileSetType">
+        <xs:sequence>
+            <xs:element name="File" type="FileType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="FilePartType">
+        <xs:sequence>
+            <xs:element name="File" type="FileType"/>
+            <xs:element name="Part" type="xs:base64Binary"/>
+        </xs:sequence>
+        <xs:attribute name="Number" type="xs:int" use="required"/>
+        <xs:attribute name="Total" type="xs:int" use="required"/>
+        <xs:attribute name="Hash" type="xs:string" use="required"/>
+    </xs:complexType>
+    <xs:complexType name="BaseMessageType">
+        <xs:choice minOccurs="0">
+            <xs:element name="Add" type="FileSetType">
+                <xs:annotation>
+                    <xs:documentation>Add file to share zone</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Remove" type="FileSetType">
+                <xs:annotation>
+                    <xs:documentation>Remove file from share zone</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="Get" type="GetType">
+                <xs:annotation>
+                    <xs:documentation>Request file or part of file</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="FilePart" type="FilePartType">
+                <xs:annotation>
+                    <xs:documentation>Part of file</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:choice>
+    </xs:complexType>
+    <xs:complexType name="GetType">
+        <xs:complexContent>
+            <xs:extension base="FileType">
+                <xs:attribute name="FromPart" type="xs:int"/>
+                <xs:attribute name="TillPart" type="xs:int"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+    <xs:complexType name="FileProtocolType">
+        <xs:complexContent>
+            <xs:extension base="BaseMessageType">
+                <xs:attribute name="Direction" use="required">
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="SCRq"/>
+                            <xs:enumeration value="SCRs"/>
+                            <xs:enumeration value="CSRq"/>
+                            <xs:enumeration value="CSRs"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+                </xs:attribute>
+                <xs:attribute name="ClientID" type="xs:string" use="required"/>
+                <xs:attribute name="SID" type="xs:string" use="required"/>
+                <xs:attribute name="Status" type="xs:string"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
 </xs:schema>
