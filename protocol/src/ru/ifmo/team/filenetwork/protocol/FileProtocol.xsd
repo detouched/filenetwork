@@ -11,8 +11,8 @@
 			<xs:element name="Description" type="xs:string"/>
 		</xs:sequence>
 		<xs:attribute name="Name" type="xs:string" use="required"/>
-		<xs:attribute name="Hash" type="xs:string"/>
-		<xs:attribute name="Size" type="xs:int"/>
+		<xs:attribute name="Hash" type="xs:string" use="required"/>
+		<xs:attribute name="Size" type="xs:long"/>
 	</xs:complexType>
 	<xs:complexType name="FileSetType">
 		<xs:sequence>
@@ -22,13 +22,7 @@
 	<xs:complexType name="FilePartType">
 		<xs:sequence>
 			<xs:element name="File" type="FileType"/>
-			<xs:element name="Part">
-				<xs:complexType>
-					<xs:simpleContent>
-						<xs:extension base="xs:string"/>
-					</xs:simpleContent>
-				</xs:complexType>
-			</xs:element>
+			<xs:element name="Part" type="xs:base64Binary"/>
 		</xs:sequence>
 		<xs:attribute name="Number" type="xs:int" use="required"/>
 		<xs:attribute name="Total" type="xs:int" use="required"/>
