@@ -25,27 +25,27 @@ public class FileInfoPanel extends JPanel {
         super.paint(g);    //To change body of overridden methods use File | Settings | File Templates.
 
         if (!foreignList.isSelectionEmpty()) {
-            try {
+//            try {
                 //Create a temporary file with the specified extension
-                SharedFile sharedFile = (SharedFile) foreignList.getSelectedValue();
-                int extensionIndex = sharedFile.getName().lastIndexOf(".");
-                final String fileExtension = sharedFile.getName().substring(extensionIndex);
+//                SharedFile sharedFile = (SharedFile) foreignList.getSelectedValue();
+//                int extensionIndex = sharedFile.getName().lastIndexOf(".");
+//                final String fileExtension = sharedFile.getName().substring(extensionIndex);
 
-                File file = File.createTempFile("icon", fileExtension);
-                ShellFolder shellFolder = ShellFolder.getShellFolder(file);
-                ImageIcon icon = new ImageIcon(shellFolder.getIcon(true));
+//                File file = File.createTempFile("icon", fileExtension);
+//                ShellFolder shellFolder = ShellFolder.getShellFolder(file);
+//                ImageIcon icon = new ImageIcon(shellFolder.getIcon(true));
 
                 //this.getGraphics().drawImage(icon,0,0,null);
 
-                fileIconLabel.setText(sharedFile.getName());
-                fileIconLabel.setIcon(icon);
+//                fileIconLabel.setText(sharedFile.getName());
+//                fileIconLabel.setIcon(icon);
                 //fileIconLabel.repaint();
 
 //Delete the temporary file
-                file.delete();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+//                file.delete();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
         } else {
             fileIconLabel.setText("<no file selected>");
         }

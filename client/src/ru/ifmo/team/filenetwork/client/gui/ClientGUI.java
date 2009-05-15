@@ -155,6 +155,7 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
         }
 
         String logFile = LOG_FILE_NAME;
+        int partSize = 0;
 
         if (props != null) {
             String logFolder = props.get("log_folder");
@@ -177,6 +178,12 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
             if (port == 0) {
                 errorExit("port property not found or set incorrect");
             }
+
+            try {
+                partSize = Integer.parseInt(props.get("part_size"));
+            } catch (NumberFormatException e) {
+                partSize = 0;
+            }
         } else {
             errorExit("Properties were not read properly");
         }
@@ -191,7 +198,7 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
         Logger clientTCPLogger = new Logger(tcpLog);
         clientLogger.clearLog();
         clientTCPLogger.clearLog();
-        fileClient = new FileClient(this, clientLogger);
+        fileClient = new FileClient(this, partSize, clientLogger);
         fileClient.registerFileListener(this);
         IClient tcpClient = new TCPClient(fileClient, clientTCPLogger);
         fileClient.registerTCPClient(tcpClient);

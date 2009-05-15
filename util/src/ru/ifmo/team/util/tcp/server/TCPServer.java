@@ -122,7 +122,7 @@ public class TCPServer implements IServer {
                             + "Count of active connections: " + handlers.size());
                     socket = serverSocket.accept();
                     socket.setSoTimeout(timeout);
-                    logger.log("Connection accepted");
+                    logger.log("Remote address connected: " + socket.getRemoteSocketAddress());                    
                 } catch (IOException e) {
                     logger.log("No connection established");
                 }

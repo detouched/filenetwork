@@ -38,7 +38,7 @@ public class TCPClient implements IClient {
     public void sendMessage(String message) throws ClientException {
         if (isStarted) {
             try {
-                logger.log("Sending message: " + message);
+                logger.log("Sending message (size: " + message.length() + "): " + message);
                 msgStreamer.sendMsg(message);
                 logger.log("Message sent");
             } catch (EncodingException e) {
@@ -108,8 +108,8 @@ public class TCPClient implements IClient {
                 try {
                     String message = msgStreamer.receiveMsg();
                     if (message != null) {
+                        logger.log("Message received (size: " + message.length() + "): " + message);
                         messageAcceptor.acceptMessage("server", message);
-                        logger.log("Message received: " + message);
                     } else {
                         Thread.sleep(POLLING_DELAY);
                     }
