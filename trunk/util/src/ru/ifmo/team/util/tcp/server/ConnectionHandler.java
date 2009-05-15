@@ -48,8 +48,6 @@ import java.net.Socket;
     }
 
     public void run() {
-        logger.log("Remote address connected: " + ip);
-
         synchronized (ip) {
             if (messageAcceptor == null) {
                 try {
@@ -64,7 +62,7 @@ import java.net.Socket;
                 String message = msgStreamer.receiveMsg();
                 if (message != null) {
                     messageAcceptor.acceptMessage(ip, message);
-                    logger.log("Message received: " + message);
+                    logger.log("Message received (size: " + message.length() + "): " + message);
                 } else {
                     Thread.sleep(POLLING_DELAY);
                 }
@@ -82,7 +80,7 @@ import java.net.Socket;
     public void sendMessage(String message) throws ServerException {
         if (server.isStarted() && !shutdown) {
             try {
-                logger.log("Sending message: " + message);
+                logger.log("Sending message (size: " + message.length() + "): " + message);
                 msgStreamer.sendMsg(message);
                 logger.log("Message sent");
             } catch (EncodingException e) {

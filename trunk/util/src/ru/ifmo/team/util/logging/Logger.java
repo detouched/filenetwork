@@ -23,14 +23,14 @@ public class Logger {
         return logFile.delete();
     }
 
-    /*package*/ void log(String message) {
+    /*package*/ void log(String logMessage) {
         try {
-            if (message.length() > 500) {
-                message = message.substring(0, 200) + " *** message too big, partially omitted *** " +
-                        message.substring(message.length() - 200);
+            String msg = logMessage;
+            if (msg.length() > 1000) {
+                msg = msg.substring(0, 400) + " *** message too big, partially omitted *** " +
+                        msg.substring(msg.length() - 400);
             }
-
-            String msg = message.replace("\n\r", "");
+            msg = msg.replace("\n\r", "");
             msg = msg.replace("\n", "");
             msg = msg.replace("\t", " ");
             synchronized (MONITOR) {

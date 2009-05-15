@@ -8,16 +8,12 @@ package ru.ifmo.team.util;
 public class ExceptionExpander {
 
     public static String expandException(Exception e) {
-        Throwable throwable = e;
-        String result = "";
-        while (throwable.getCause() != null) {
-            result += throwable.getMessage();
-            if (throwable.getCause() != null) {
-                result += " CAUSED BY ";
-                throwable = throwable.getCause();
-            }
-        }
-        result += throwable.getMessage();
+        String result = e.getMessage();
+        Throwable throwable = e.getCause();
+        while (throwable != null) {
+            result += " CAUSED BY " + throwable.getMessage();
+            throwable = throwable.getCause();
+        }        
         return result;
     }
 }

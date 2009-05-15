@@ -15,6 +15,7 @@ import ru.ifmo.team.util.tcp.client.IClient;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.*;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
@@ -26,6 +27,8 @@ import java.util.zip.CheckedInputStream;
  */
 public class FileClient implements IFileClient {
 
+    private static final int DEF_PART_SIZE = 10240;
+
     private final Map<SharedFile, File> sharedLocalFiles = new LinkedHashMap<SharedFile, File>();
     private final Set<File> lockedFiles = new HashSet<File>();
     private final Map<String, SharedFile> sharedForeignFiles = new LinkedHashMap<String, SharedFile>();
@@ -34,12 +37,18 @@ public class FileClient implements IFileClient {
     private final PrefixLogger logger;
 
     private final IManager manager;
+    private final int partSize;
 
     private String clientID;
     private IClient tcpClient;
 
-    public FileClient(IManager manager, Logger logger) {
+    public FileClient(IManager manager, int partSize, Logger logger) {
         this.manager = manager;
+        if (partSize <= 100) {
+            this.partSize = DEF_PART_SIZE;
+        } else {
+            this.partSize = partSize;
+        }
         this.logger = new PrefixLogger("CL", logger);
     }
 
@@ -290,6 +299,7 @@ public class FileClient implements IFileClient {
                             if (download != null) {
                                 TransferAction transfer = (TransferAction) action;
                                 logger.log("Received part " + transfer.getPartNumber() +
+                                        " of " + transfer.getPartsTotal() +
                                         " of " + transfer.getFile().getName());
                                 try {
                                     download.processPart(transfer.getPartNumber(),
@@ -323,40 +333,86 @@ public class FileClient implements IFileClient {
 
     private class FileSender implements Runnable {
 
-        private final File file;
         private final SharedFile sharedFile;
-        private final int fromPart;
-        private final int tillPart;
         private final String sid;
 
-        private FileInputStream input;
+        private RandomAccessFile raFile;
+        private int totalAmnt;
+        private int fromPart;
+        private int tillPart;
 
         private FileSender(SharedFile sharedFile, File file, String sid, int fromPart, int tillPart) {
+            logger.log("Preparing transfer of file " + file.getName() + "...");
             this.sharedFile = sharedFile;
-            this.file = file;
+            try {
+                raFile = new RandomAccessFile(file, "r");
+                long size = raFile.length();
+                totalAmnt = (int) Math.ceil(size / (double) partSize);
+                logger.log("File size: " + size + "; part size: " + partSize + "; total part amount: " + totalAmnt);
+            } catch (IOException e) {
+                logger.log("Transfer of file " + file.getName() + " failed: " + e.getMessage());
+                raFile = null;
+            }
             this.sid = sid;
             this.fromPart = fromPart;
             this.tillPart = tillPart;
         }
 
         public void run() {
+            if (raFile == null) {
+                return;
+            }
+            String reason = null;
+            if (fromPart < 0) {
+                reason = "start-part number is negative";
+            } else if (tillPart < 0) {
+                reason = "end-part number is negative";
+            } else if (fromPart > totalAmnt) {
+                reason = "start-part number is greater than total part amount";
+            } else if (tillPart > totalAmnt) {
+                reason = "end-part number is greater than total part amount";
+            } else if (tillPart > fromPart) {
+                reason = "end-part number is greater than start-part number";
+            }
+            if (reason != null) {
+                logger.log("Transfer failed: " + reason);
+                return;
+            }
+            if (tillPart == 0) {
+                fromPart = 1;
+                tillPart = totalAmnt;
+            }
+            logger.log("Transferring parts from " + fromPart + " till " + tillPart);
             try {
-                input = new FileInputStream(file);
-                byte[] stor = new byte[(int) file.length()];
-                int offset = 0;
-                do {
-                    offset += input.read(stor, offset, stor.length - offset);
-                } while (offset < stor.length);
-                TransferAction action = new TransferAction(sharedFile, 1, 1, sharedFile.getHash(), stor);
-                Message response = new Message(action, FileProtocolType.Direction.CS_RS, clientID, sid, null);
-                tcpClient.sendMessage(response.encodeMessage());
-            } catch (Exception e) {
-                logger.log("Unable to send part of file " + file.getPath() + ": " + ExceptionExpander.expandException(e));
-            } finally {
+                raFile.seek((fromPart - 1) * (long) partSize);
+            } catch (IOException e) {
+                logger.log("Transfer failed: " + e.getMessage());
+                return;
+            }
+            for (int i = fromPart; i <= tillPart; i++) {
                 try {
-                    input.close();
-                } catch (IOException ignored) {
+                    logger.log("Sending part " + i + " from " + (tillPart - fromPart + 1) +
+                            " of file " + sharedFile.getName());
+                    byte[] stor;
+                    if (i == totalAmnt) {
+                        stor = new byte[(int) (raFile.length() - partSize * (totalAmnt - 1) )];
+                    } else {
+                        stor = new byte[partSize];
+                    }
+                    raFile.readFully(stor);
+                    TransferAction action = new TransferAction(sharedFile, i, totalAmnt, stor.hashCode() + "", stor);
+                    Message response = new Message(action, FileProtocolType.Direction.CS_RS, clientID, sid, null);
+                    tcpClient.sendMessage(response.encodeMessage());
+                } catch (Exception e) {
+                    logger.log("Unable to send part " + i + " of file " + sharedFile.getName() + " : " +
+                            ExceptionExpander.expandException(e));
+                    logger.log("Transfer failed");
+                    break;
                 }
+            }
+            try {
+                raFile.close();
+            } catch (IOException ignored) {
             }
         }
     }
