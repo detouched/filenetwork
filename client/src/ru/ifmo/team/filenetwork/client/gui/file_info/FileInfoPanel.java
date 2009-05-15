@@ -1,12 +1,7 @@
 package ru.ifmo.team.filenetwork.client.gui.file_info;
 
-import ru.ifmo.team.filenetwork.SharedFile;
-import sun.awt.shell.ShellFolder;
-
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import java.io.IOException;
 
 public class FileInfoPanel extends JPanel {
     private JList foreignList;
@@ -26,7 +21,7 @@ public class FileInfoPanel extends JPanel {
 
         if (!foreignList.isSelectionEmpty()) {
 //            try {
-                //Create a temporary file with the specified extension
+            //Create a temporary file with the specified extension
 //                SharedFile sharedFile = (SharedFile) foreignList.getSelectedValue();
 //                int extensionIndex = sharedFile.getName().lastIndexOf(".");
 //                final String fileExtension = sharedFile.getName().substring(extensionIndex);
@@ -35,11 +30,11 @@ public class FileInfoPanel extends JPanel {
 //                ShellFolder shellFolder = ShellFolder.getShellFolder(file);
 //                ImageIcon icon = new ImageIcon(shellFolder.getIcon(true));
 
-                //this.getGraphics().drawImage(icon,0,0,null);
+            //this.getGraphics().drawImage(icon,0,0,null);
 
 //                fileIconLabel.setText(sharedFile.getName());
 //                fileIconLabel.setIcon(icon);
-                //fileIconLabel.repaint();
+            //fileIconLabel.repaint();
 
 //Delete the temporary file
 //                file.delete();

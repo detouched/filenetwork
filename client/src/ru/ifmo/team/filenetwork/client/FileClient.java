@@ -395,7 +395,7 @@ public class FileClient implements IFileClient {
                             " of file " + sharedFile.getName());
                     byte[] stor;
                     if (i == totalAmnt) {
-                        stor = new byte[(int) (raFile.length() - partSize * (totalAmnt - 1) )];
+                        stor = new byte[(int) (raFile.length() - partSize * (totalAmnt - 1))];
                     } else {
                         stor = new byte[partSize];
                     }

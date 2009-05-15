@@ -13,7 +13,7 @@ public class ExceptionExpander {
         while (throwable != null) {
             result += " CAUSED BY " + throwable.getMessage();
             throwable = throwable.getCause();
-        }        
+        }
         return result;
     }
 }
