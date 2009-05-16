@@ -7,7 +7,6 @@ import ru.ifmo.team.filenetwork.actions.GetAction;
 import ru.ifmo.team.filenetwork.actions.TransferAction;
 import ru.ifmo.team.fileprotocol.FileProtocolType;
 import ru.ifmo.team.util.IMessageAcceptor;
-import ru.ifmo.team.util.KeyGen;
 import ru.ifmo.team.util.logging.Logger;
 import ru.ifmo.team.util.logging.PrefixLogger;
 import ru.ifmo.team.util.tcp.server.IConnectionHandler;
@@ -90,15 +89,21 @@ public class FileServer implements IFileServer {
     }
 
     public IMessageAcceptor clientJoined(String ip, IConnectionHandler connectionHandler) {
-        String cid = KeyGen.generate(16);
-        ClientHandler handler = new ClientHandler(this, cid, connectionHandler, logger.getBaseLogger());
+        synchronized (handlers) {
+            ClientHandler handler = new ClientHandler(this, connectionHandler, logger.getBaseLogger());
+            return handler;
+        }
+    }
+
+    public void registerHandler(String cid, ClientHandler handler) {
         handlers.put(cid, handler);
         handler.fileSetUpdated(getFileSet(), null);
-        return handler;
     }
 
     public void clientLeft(String clientID) {
-        handlers.remove(clientID);
+        synchronized (handlers) {
+            handlers.remove(clientID);
+        }
         Set<SharedFile> removedFiles = new HashSet<SharedFile>();
         Set<String> removedTransfers = new HashSet<String>();
         synchronized (monitor) {
@@ -122,8 +127,10 @@ public class FileServer implements IFileServer {
     }
 
     private void fireUpdatedFileSet(Set<SharedFile> added, Set<SharedFile> removed) {
-        for (IFileSetListener listener : handlers.values()) {
-            listener.fileSetUpdated(added, removed);
+        synchronized (handlers) {
+            for (IFileSetListener listener : handlers.values()) {
+                listener.fileSetUpdated(added, removed);
+            }
         }
     }
 
@@ -166,8 +173,10 @@ public class FileServer implements IFileServer {
     }
 
     public void shutDown() {
-        for (ClientHandler handler : handlers.values()) {
-            handler.shutDown();
+        synchronized (handlers) {
+            for (ClientHandler handler : handlers.values()) {
+                handler.shutDown();
+            }
         }
     }
 
