@@ -28,16 +28,16 @@ import java.util.Set;
     //    private final Map<String, Message> awaiting = new HashMap<String, Message>();
     private final Queue<Message> inbox = new LinkedList<Message>();
     private final Queue<Message> outbox = new LinkedList<Message>();
-    private final IFileServer fileServer;
-    private final String clientID;
+    private final FileServer fileServer;
+
     private final IConnectionHandler connectionHandler;
     private final PrefixLogger logger;
 
+    private String clientID;
     private boolean shutdown = false;
 
-    ClientHandler(IFileServer fileServer, String clientID, IConnectionHandler connectionHandler, Logger logger) {
+    ClientHandler(FileServer fileServer, IConnectionHandler connectionHandler, Logger logger) {
         this.fileServer = fileServer;
-        this.clientID = clientID;
         this.connectionHandler = connectionHandler;
         connectionHandler.registerMessageAcceptor(this);
         this.logger = new PrefixLogger("Client_" + hashCode(), logger);
@@ -138,6 +138,10 @@ import java.util.Set;
                 return;
             }
             String id = message.getClientID();
+            if (clientID == null) {
+                clientID = id;
+                fileServer.registerHandler(clientID, ClientHandler.this);
+            }
             if (!clientID.equals(id)) {
                 logger.log("Identification failed: \"" + id + "\" received but\"" + clientID + "\"expected");
                 connectionHandler.shutDown();

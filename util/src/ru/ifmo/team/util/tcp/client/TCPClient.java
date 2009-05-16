@@ -23,16 +23,15 @@ public class TCPClient implements IClient {
     public static final int POLLING_DELAY = 50;
 
     private final PrefixLogger logger;
-    private final IMessageAcceptor messageAcceptor;
     private final Thread clientThread = new Thread(new Client());
 
+    private IMessageAcceptor messageAcceptor;
     private MessageStreamer msgStreamer;
     private boolean shutdown = false;
     private boolean isStarted = false;
 
-    public TCPClient(IMessageAcceptor messageAcceptor, Logger logger) {
+    public TCPClient(Logger logger) {
         this.logger = new PrefixLogger("CL", logger);
-        this.messageAcceptor = messageAcceptor;
     }
 
     public void sendMessage(String message) throws ClientException {
@@ -48,13 +47,14 @@ public class TCPClient implements IClient {
         } else {
             throw new ClientException("Unable to send message: client is not started");
         }
-
     }
 
-    public boolean start(String host, int port) {
+    public boolean start(IMessageAcceptor messageAcceptor, String host, int port) {
         if (messageAcceptor == null) {
             logger.log("Unable to start client: no message acceptor specified");
             return false;
+        } else {
+            this.messageAcceptor = messageAcceptor;
         }
         Socket socket;
         try {
@@ -70,7 +70,7 @@ public class TCPClient implements IClient {
         try {
             InputStream is = socket.getInputStream();
             OutputStream os = socket.getOutputStream();
-            msgStreamer = new MessageStreamer(is, os, logger.getBaseLogger());
+            msgStreamer = new MessageStreamer(is, os);
         } catch (IOException e) {
             logger.log("Stream mapping failed: " + e.getMessage());
             return false;
@@ -88,9 +88,13 @@ public class TCPClient implements IClient {
     }
 
     public void stop() {
+        if (!isStarted) {
+            return;
+        }
         logger.log("Stopping client...");
         long time = System.currentTimeMillis();
         shutDown();
+        messageAcceptor = null;
         logger.log("Waiting for client thread to terminate");
         try {
             clientThread.join(3000);

@@ -26,16 +26,15 @@ public class Logger {
     /*package*/ void log(String logMessage) {
         try {
             String msg = logMessage;
-            if (msg.length() > 1000) {
-                msg = msg.substring(0, 400) + " *** message too big, partially omitted *** " +
-                        msg.substring(msg.length() - 400);
+            if (logMessage.length() > 1000) {
+                msg = logMessage.substring(0, 400) + " *** message too big, partially omitted *** ";
+                msg += logMessage.substring(logMessage.length() - 400);
             }
             msg = msg.replace("\n\r", "");
             msg = msg.replace("\n", "");
             msg = msg.replace("\t", " ");
             synchronized (MONITOR) {
                 FileWriter logWriter = new FileWriter(logFile, true);
-                //TODO date
                 Date now = new Date(System.currentTimeMillis());
 
                 logWriter.write(now + " " + msg + "\n");

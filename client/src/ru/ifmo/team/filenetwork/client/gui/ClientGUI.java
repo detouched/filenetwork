@@ -4,7 +4,6 @@ import ru.ifmo.team.filenetwork.SharedFile;
 import ru.ifmo.team.filenetwork.client.FileClient;
 import ru.ifmo.team.filenetwork.client.IFileClient;
 import ru.ifmo.team.filenetwork.client.IFileWatcher;
-import ru.ifmo.team.filenetwork.client.IManager;
 import ru.ifmo.team.filenetwork.client.gui.file_info.FileInfoPanel;
 import ru.ifmo.team.util.PropReader;
 import ru.ifmo.team.util.logging.Logger;
@@ -28,7 +27,7 @@ import java.util.Set;
  * Date: May 10, 2009
  * Version: 1.0
  */
-public class ClientGUI extends JFrame implements IFileWatcher, IManager {
+public class ClientGUI extends JFrame implements IFileWatcher {
 
     private static final String LOG_FILE_NAME = "client";
     private static final String PROPERTIES_FILE_NAME = "client.properties";
@@ -198,14 +197,10 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
         Logger clientTCPLogger = new Logger(tcpLog);
         clientLogger.clearLog();
         clientTCPLogger.clearLog();
-        fileClient = new FileClient(this, partSize, clientLogger);
+        IClient tcpClient = new TCPClient(clientTCPLogger);
+        fileClient = new FileClient(tcpClient, host, port, partSize, clientLogger);
         fileClient.registerFileListener(this);
-        IClient tcpClient = new TCPClient(fileClient, clientTCPLogger);
-        fileClient.registerTCPClient(tcpClient);
-
-        if (!tcpClient.start(host, port)) {
-            errorExit("Unable to start TCP client, see logs for detailed information");
-        }
+        fileClient.start();
     }
 
     private void moveWindowToCenter() {
@@ -233,7 +228,7 @@ public class ClientGUI extends JFrame implements IFileWatcher, IManager {
     }
 
     public void connectionClosed() {
-        errorExit("Connection with server was close, see logs for detailed information.\n" +
+        errorExit("Connection with server was closed, see logs for detailed information.\n" +
                 "Client can't work anymore until server is up");
     }
 

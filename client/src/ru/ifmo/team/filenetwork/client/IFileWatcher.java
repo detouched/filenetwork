@@ -15,4 +15,6 @@ public interface IFileWatcher {
     void downloadCompleted(String id, File file);
 
     void fileListUpdated(Set<SharedFile> local, Set<SharedFile> foreign);
+
+    void connectionClosed();
 }

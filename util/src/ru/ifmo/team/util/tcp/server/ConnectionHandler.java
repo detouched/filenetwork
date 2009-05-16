@@ -40,7 +40,7 @@ import java.net.Socket;
         try {
             is = socket.getInputStream();
             os = socket.getOutputStream();
-            msgStreamer = new MessageStreamer(is, os, logger);
+            msgStreamer = new MessageStreamer(is, os);
         } catch (IOException e) {
             this.logger.log("Stream mapping failed: " + e.getMessage());
             finish();

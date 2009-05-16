@@ -90,10 +90,10 @@ public class Message {
     }
 
     public static Message decodeMessage(String message) throws MessagingException {
+        Action action = null;
         try {
             FileProtocolDocument doc = FileProtocolDocument.Factory.parse(message);
             FileProtocolType xmlMsg = doc.getFileProtocol();
-            Action action = null;
             if (xmlMsg.isSetAdd()) {
                 action = processAdd(xmlMsg.getAdd());
             } else if (xmlMsg.isSetRemove()) {
@@ -108,6 +108,7 @@ public class Message {
         } catch (XmlException e) {
             throw new MessagingException("Unable to parse doc", e);
         }
+
     }
 
     private static AddAction processAdd(FileSetType addSection) {

@@ -28,6 +28,7 @@ import java.util.zip.CheckedInputStream;
 public class FileClient implements IFileClient {
 
     private static final int DEF_PART_SIZE = 10240;
+    private static final int TRIES = 10;
 
     private final Map<SharedFile, File> sharedLocalFiles = new LinkedHashMap<SharedFile, File>();
     private final Set<File> lockedFiles = new HashSet<File>();
@@ -36,34 +37,44 @@ public class FileClient implements IFileClient {
     private final Map<String, Download> downloads = new HashMap<String, Download>();
     private final PrefixLogger logger;
 
-    private final IManager manager;
     private final int partSize;
+    private final String clientID;
+    private final String host;
+    private final int port;
+    private final IClient tcpClient;
 
-    private String clientID;
-    private IClient tcpClient;
+    private boolean shutdown = true;
 
-    public FileClient(IManager manager, int partSize, Logger logger) {
-        this.manager = manager;
+    public FileClient(IClient tcpClient, String host, int port, int partSize, Logger logger) {
+        this.tcpClient = tcpClient;
+        this.host = host;
+        this.port = port;
         if (partSize <= 100) {
             this.partSize = DEF_PART_SIZE;
         } else {
             this.partSize = partSize;
         }
         this.logger = new PrefixLogger("CL", logger);
+        this.clientID = KeyGen.generate(Message.SID_LENGTH / 2);
     }
+
+    public void start() {
+        if (!reconnect(TRIES)) {
+            fireConnectionClosed();
+        } else {
+            try {
+                sendFirstMessage();
+            } catch (ClientException ignored) {
+            }
+        }
+    }
+
 
     public void registerFileListener(IFileWatcher watcher) {
         fileWatchers.add(watcher);
     }
 
-    public void registerTCPClient(IClient client) {
-        tcpClient = client;
-    }
-
     public boolean addLocalFiles(Map<File, String> files) {
-        if (clientID == null) {
-            return false;
-        }
         Map<SharedFile, File> added = new HashMap<SharedFile, File>();
         for (Map.Entry<File, String> fileDesc : files.entrySet()) {
             File file = fileDesc.getKey();
@@ -120,9 +131,6 @@ public class FileClient implements IFileClient {
     }
 
     public boolean removeLocalFiles(Set<SharedFile> files) {
-        if (clientID == null) {
-            return false;
-        }
         Set<SharedFile> removed = new HashSet<SharedFile>();
         for (SharedFile file : files) {
             synchronized (sharedLocalFiles) {
@@ -162,9 +170,6 @@ public class FileClient implements IFileClient {
 
     public String downloadFile(SharedFile sharedFile, File file) {
         if (sharedLocalFiles.containsKey(sharedFile)) {
-            return null;
-        }
-        if (clientID == null) {
             return null;
         }
         String sid = KeyGen.generate(Message.SID_LENGTH);
@@ -238,13 +243,9 @@ public class FileClient implements IFileClient {
         }
         if (msg != null) {
             String id = msg.getClientID();
-            if (clientID == null) {
-                clientID = id;
-            } else {
-                if (!clientID.equals(id)) {
-                    logger.log("Identification failed: \"" + id + "\" received but\"" + clientID + "\"expected");
-                    shutDown();
-                }
+            if (!clientID.equals(id)) {
+                logger.log("Identification failed: \"" + id + "\" received but\"" + clientID + "\"expected");
+                shutDown();
             }
             FileProtocolType.Direction.Enum dir = msg.getDirection();
             if (dir == FileProtocolType.Direction.SC_RQ) {
@@ -323,12 +324,52 @@ public class FileClient implements IFileClient {
     }
 
     private void shutDown() {
-        manager.connectionClosed();
+        shutdown = true;
+        if (tcpClient.isStarted()) {
+            tcpClient.stop();
+        }
     }
 
     public void connectionClosed(String ip) {
-        logger.log("Connection was closed, exiting");
+        logger.log("Connection was closed, reconnecting");
+        reconnect(TRIES);
+        try {
+            sendFirstMessage();
+        } catch (ClientException ignored) {
+        }
+    }
+
+    public void fireConnectionClosed() {
         shutDown();
+        for (IFileWatcher watcher : fileWatchers) {
+            watcher.connectionClosed();
+        }
+    }
+
+    public boolean reconnect(int tries) {
+        if (tcpClient.isStarted()) {
+            logger.log("Stopping working TCP client");
+            tcpClient.stop();
+            logger.log("Trying to reconnect for " + TRIES + " times");
+
+        }
+        for (int i = 0; i < tries; i++) {
+            logger.log("Connect attempt #" + i + "...");
+            if (tcpClient.start(this, host, port)) {
+                shutdown = false;
+                logger.log("Connected successfully");
+                return true;
+            }
+            logger.log("Connection attepmpt failed");
+        }
+        logger.log("Unable to reconnect after " + TRIES + " tries");
+        return false;
+    }
+
+    private void sendFirstMessage() throws ClientException {
+        AddAction a = new AddAction(sharedLocalFiles.keySet());
+        Message rq = new Message(a, FileProtocolType.Direction.CS_RQ, clientID, null);
+        tcpClient.sendMessage(rq.encodeMessage());
     }
 
     private class FileSender implements Runnable {
@@ -359,6 +400,10 @@ public class FileClient implements IFileClient {
         }
 
         public void run() {
+            if (shutdown) {
+                logger.log("File sender stopped");
+                return;
+            }
             if (raFile == null) {
                 return;
             }
@@ -389,7 +434,12 @@ public class FileClient implements IFileClient {
                 logger.log("Transfer failed: " + e.getMessage());
                 return;
             }
+            System.out.println("From: " + fromPart + "; till: " + tillPart);
             for (int i = fromPart; i <= tillPart; i++) {
+                if (shutdown) {
+                    logger.log("File sender stopped");
+                    return;
+                }
                 try {
                     logger.log("Sending part " + i + " from " + (tillPart - fromPart + 1) +
                             " of file " + sharedFile.getName());
@@ -411,6 +461,7 @@ public class FileClient implements IFileClient {
                 }
             }
             try {
+                logger.log("Transfer of file " + sharedFile.getName() + " finished");
                 raFile.close();
             } catch (IOException ignored) {
             }
