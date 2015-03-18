@@ -1,0 +1,1 @@
+Masyalski course project by team of 7 IFMO students of 4th course
